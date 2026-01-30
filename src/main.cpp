@@ -18,6 +18,7 @@
 #include "activities/boot_sleep/BootActivity.h"
 #include "activities/boot_sleep/SleepActivity.h"
 #include "activities/browser/OpdsBookBrowserActivity.h"
+#include "activities/dictionary/DictionaryActivity.h"
 #include "activities/home/HomeActivity.h"
 #include "activities/home/MyLibraryActivity.h"
 #include "activities/network/CrossPointWebServerActivity.h"
@@ -236,10 +237,15 @@ void onGoToBrowser() {
   enterNewActivity(new OpdsBookBrowserActivity(renderer, mappedInputManager, onGoHome));
 }
 
+void onGoToDictionary() {
+  exitActivity();
+  enterNewActivity(new DictionaryActivity(renderer, mappedInputManager, onGoHome));
+}
+
 void onGoHome() {
   exitActivity();
   enterNewActivity(new HomeActivity(renderer, mappedInputManager, onContinueReading, onGoToMyLibrary, onGoToSettings,
-                                    onGoToFileTransfer, onGoToBrowser));
+                                    onGoToFileTransfer, onGoToBrowser, onGoToDictionary));
 }
 
 void setupDisplayAndFonts() {

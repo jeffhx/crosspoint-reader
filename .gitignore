@@ -9,3 +9,6 @@ build
 **/__pycache__/
 /compile_commands.json
 /.cache
+
+# Downloaded dictionaries (use scripts/download-dictionaries.sh)
+/dictionaries/

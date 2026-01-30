@@ -9,6 +9,7 @@
 
 #include <algorithm>
 
+#include "activities/todo/TodoStore.h"
 #include "html/FilesPageHtml.generated.h"
 #include "html/HomePageHtml.generated.h"
 #include "util/StringUtils.h"
@@ -111,6 +112,12 @@ void CrossPointWebServer::begin() {
 
   // Delete file/folder endpoint
   server->on("/delete", HTTP_POST, [this] { handleDelete(); });
+
+  // TODO API endpoints
+  server->on("/api/todos", HTTP_GET, [this] { handleGetTodos(); });
+  server->on("/api/todos", HTTP_POST, [this] { handleAddTodo(); });
+  server->on("/api/todos/update", HTTP_POST, [this] { handleUpdateTodo(); });
+  server->on("/api/todos/delete", HTTP_POST, [this] { handleDeleteTodo(); });
 
   server->onNotFound([this] { handleNotFound(); });
   Serial.printf("[%lu] [WEB] [MEM] Free heap after route setup: %d bytes\n", millis(), ESP.getFreeHeap());
@@ -934,5 +941,134 @@ void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* 
 
     default:
       break;
+  }
+}
+
+// ============================================================================
+// TODO API Handlers
+// ============================================================================
+
+void CrossPointWebServer::handleGetTodos() const {
+  JsonDocument doc;
+  JsonArray items = doc["items"].to<JsonArray>();
+
+  const auto& todos = TODO_STORE.getItems();
+  for (size_t i = 0; i < todos.size(); i++) {
+    JsonObject item = items.add<JsonObject>();
+    item["id"] = i;
+    item["text"] = todos[i].text;
+    item["completed"] = todos[i].completed;
+  }
+
+  doc["count"] = todos.size();
+  doc["maxItems"] = TodoStore::MAX_ITEMS;
+
+  String json;
+  serializeJson(doc, json);
+  server->send(200, "application/json", json);
+}
+
+void CrossPointWebServer::handleAddTodo() const {
+  if (!server->hasArg("title")) {
+    server->send(400, "application/json", R"({"error":"Missing title parameter"})");
+    return;
+  }
+
+  const String title = server->arg("title");
+  if (title.isEmpty()) {
+    server->send(400, "application/json", R"({"error":"Title cannot be empty"})");
+    return;
+  }
+
+  if (title.length() > 200) {
+    server->send(400, "application/json", "{\"error\":\"Title too long (max 200 characters)\"}");
+    return;
+  }
+
+  if (TODO_STORE.isFull()) {
+    server->send(400, "application/json", "{\"error\":\"TODO list is full (max 20 items)\"}");
+    return;
+  }
+
+  if (TODO_STORE.addItem(title.c_str())) {
+    JsonDocument doc;
+    doc["success"] = true;
+    doc["id"] = TODO_STORE.getCount() - 1;
+    doc["message"] = "TODO added successfully";
+
+    String json;
+    serializeJson(doc, json);
+    server->send(200, "application/json", json);
+    Serial.printf("[%lu] [WEB] TODO added: %s\n", millis(), title.c_str());
+  } else {
+    server->send(500, "application/json", R"({"error":"Failed to add TODO"})");
+  }
+}
+
+void CrossPointWebServer::handleUpdateTodo() const {
+  if (!server->hasArg("id")) {
+    server->send(400, "application/json", R"({"error":"Missing id parameter"})");
+    return;
+  }
+
+  const int id = server->arg("id").toInt();
+  if (id < 0 || static_cast<size_t>(id) >= TODO_STORE.getCount()) {
+    server->send(404, "application/json", R"({"error":"TODO not found"})");
+    return;
+  }
+
+  // Check if we're updating completion status
+  if (server->hasArg("completed")) {
+    const String completedStr = server->arg("completed");
+    const bool completed = (completedStr == "true" || completedStr == "1");
+
+    // Get current state and toggle if needed
+    const auto& items = TODO_STORE.getItems();
+    if (items[id].completed != completed) {
+      TODO_STORE.toggleItem(id);
+    }
+  }
+
+  // Check if we're updating text
+  if (server->hasArg("text")) {
+    const String text = server->arg("text");
+    if (!text.isEmpty() && text.length() <= 200) {
+      TODO_STORE.editItem(id, text.c_str());
+    }
+  }
+
+  JsonDocument doc;
+  doc["success"] = true;
+  doc["message"] = "TODO updated successfully";
+
+  String json;
+  serializeJson(doc, json);
+  server->send(200, "application/json", json);
+  Serial.printf("[%lu] [WEB] TODO %d updated\n", millis(), id);
+}
+
+void CrossPointWebServer::handleDeleteTodo() const {
+  if (!server->hasArg("id")) {
+    server->send(400, "application/json", R"({"error":"Missing id parameter"})");
+    return;
+  }
+
+  const int id = server->arg("id").toInt();
+  if (id < 0 || static_cast<size_t>(id) >= TODO_STORE.getCount()) {
+    server->send(404, "application/json", R"({"error":"TODO not found"})");
+    return;
+  }
+
+  if (TODO_STORE.removeItem(id)) {
+    JsonDocument doc;
+    doc["success"] = true;
+    doc["message"] = "TODO deleted successfully";
+
+    String json;
+    serializeJson(doc, json);
+    server->send(200, "application/json", json);
+    Serial.printf("[%lu] [WEB] TODO %d deleted\n", millis(), id);
+  } else {
+    server->send(500, "application/json", R"({"error":"Failed to delete TODO"})");
   }
 }

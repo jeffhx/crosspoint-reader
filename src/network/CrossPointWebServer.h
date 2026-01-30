@@ -78,4 +78,10 @@ class CrossPointWebServer {
   void handleUploadPost() const;
   void handleCreateFolder() const;
   void handleDelete() const;
+
+  // TODO API handlers
+  void handleGetTodos() const;
+  void handleAddTodo() const;
+  void handleUpdateTodo() const;
+  void handleDeleteTodo() const;
 };

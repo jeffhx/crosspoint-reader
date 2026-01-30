@@ -23,7 +23,7 @@ void HomeActivity::taskTrampoline(void* param) {
 }
 
 int HomeActivity::getMenuItemCount() const {
-  int count = 4;  // My Library, Dictionary, File transfer, Settings
+  int count = 5;  // My Library, Dictionary, TODO List, File transfer, Settings
   if (hasContinueReading) count++;
   if (hasOpdsUrl) count++;
   return count;
@@ -175,6 +175,7 @@ void HomeActivity::loop() {
     const int myLibraryIdx = idx++;
     const int opdsLibraryIdx = hasOpdsUrl ? idx++ : -1;
     const int dictionaryIdx = idx++;
+    const int todoListIdx = idx++;
     const int fileTransferIdx = idx++;
     const int settingsIdx = idx;
 
@@ -186,6 +187,8 @@ void HomeActivity::loop() {
       onOpdsBrowserOpen();
     } else if (selectorIndex == dictionaryIdx) {
       onDictionaryOpen();
+    } else if (selectorIndex == todoListIdx) {
+      onTodoListOpen();
     } else if (selectorIndex == fileTransferIdx) {
       onFileTransferOpen();
     } else if (selectorIndex == settingsIdx) {
@@ -506,10 +509,10 @@ void HomeActivity::render() {
 
   // --- Bottom menu tiles ---
   // Build menu items dynamically
-  std::vector<const char*> menuItems = {"My Library", "Dictionary", "File Transfer", "Settings"};
+  std::vector<const char*> menuItems = {"My Library", "Dictionary", "TODO List", "File Transfer", "Settings"};
   if (hasOpdsUrl) {
-    // Insert OPDS Browser after My Library
-    menuItems.insert(menuItems.begin() + 1, "OPDS Browser");
+    // Insert Calibre Library after My Library
+    menuItems.insert(menuItems.begin() + 1, "Calibre Library");
   }
 
   const int menuTileWidth = pageWidth - 2 * margin;

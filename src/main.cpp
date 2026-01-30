@@ -20,6 +20,7 @@
 #include "activities/browser/OpdsBookBrowserActivity.h"
 #include "activities/dictionary/DictionaryActivity.h"
 #include "activities/home/HomeActivity.h"
+#include "activities/todo/TodoActivity.h"
 #include "activities/home/MyLibraryActivity.h"
 #include "activities/network/CrossPointWebServerActivity.h"
 #include "activities/reader/ReaderActivity.h"
@@ -242,10 +243,15 @@ void onGoToDictionary() {
   enterNewActivity(new DictionaryActivity(renderer, mappedInputManager, onGoHome));
 }
 
+void onGoToTodoList() {
+  exitActivity();
+  enterNewActivity(new TodoActivity(renderer, mappedInputManager, onGoHome));
+}
+
 void onGoHome() {
   exitActivity();
   enterNewActivity(new HomeActivity(renderer, mappedInputManager, onContinueReading, onGoToMyLibrary, onGoToSettings,
-                                    onGoToFileTransfer, onGoToBrowser, onGoToDictionary));
+                                    onGoToFileTransfer, onGoToBrowser, onGoToDictionary, onGoToTodoList));
 }
 
 void setupDisplayAndFonts() {
